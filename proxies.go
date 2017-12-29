@@ -259,7 +259,7 @@ func (s *ProxiesServiceOp) Import(proxyName string, source string) (*ProxyRevisi
     if e != nil {
       return nil, nil, errors.New(fmt.Sprintf("while creating temp dir, error: %#v", e))
     }
-    fmt.Printf("zipped %s into %s\n\n", source, zipfileName)
+    //fmt.Printf("zipped %s into %s\n\n", source, zipfileName)
   }
 
   if !strings.HasSuffix(zipfileName,".zip") {
