@@ -38,12 +38,16 @@ type EdgeClient struct {
 	// Base URL for API requests.
 	BaseURL *url.URL
 
+	// Base URL for API requests.
+	BaseURLEnv *url.URL
+
 	// User agent for client
 	UserAgent string
 
 	// Services used for communicating with the API
 	Proxies ProxiesService
 
+	KVMService KVMService
 	// Account           AccountService
 	// Actions           ActionsService
 	// Domains           DomainsService
@@ -123,6 +127,9 @@ type EdgeClientOptions struct {
 	// Specify the Edge organization name.
 	Org string
 
+	//Specify the Edge environment name.
+	Env string
+
 	// Required. Authentication information for the Edge Management server.
 	Auth *EdgeAuth
 
@@ -177,9 +184,12 @@ func NewEdgeClient(o *EdgeClientOptions) (*EdgeClient, error) {
 		return nil, err
 	}
 	baseURL.Path = path.Join(baseURL.Path, "v1/o/", o.Org, "/")
+	baseURLEnv := baseURL
+	baseURLEnv.Path = path.Join(baseURLEnv.Path, "environments/", o.Env)
 
-	c := &EdgeClient{client: httpClient, BaseURL: baseURL, UserAgent: userAgent}
+	c := &EdgeClient{client: httpClient, BaseURL: baseURL, BaseURLEnv: baseURLEnv, UserAgent: userAgent}
 	c.Proxies = &ProxiesServiceOp{client: c}
+	c.KVMService = &KVMServiceOp{client: c}
 
 	var e error = nil
 	if o.Auth == nil {
@@ -267,7 +277,14 @@ func (c *EdgeClient) NewRequest(method, urlStr string, body interface{}) (*http.
 		return nil, err
 	}
 	u := c.BaseURL.ResolveReference(rel)
-	u.Path = path.Join(c.BaseURL.Path, rel.Path)
+
+	entitytype := reflect.TypeOf(&body).Elem()
+
+	if entitytype.String() == "KVMService" {
+		u.Path = path.Join(c.BaseURLEnv.Path, rel.Path)
+	} else {
+		u.Path = path.Join(c.BaseURL.Path, rel.Path)
+	}
 
 	var req *http.Request
 	if body != nil {
