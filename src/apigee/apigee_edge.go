@@ -17,6 +17,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strings"
 )
 
 const (
@@ -180,12 +181,14 @@ func NewEdgeClient(o *EdgeClientOptions) (*EdgeClient, error) {
 		mgmtUrl = defaultBaseURL
 	}
 	baseURL, err := url.Parse(mgmtUrl)
+	baseURLEnv, err := url.Parse(mgmtUrl)
+
 	if err != nil {
 		return nil, err
 	}
+
 	baseURL.Path = path.Join(baseURL.Path, "v1/o/", o.Org, "/")
-	baseURLEnv := baseURL
-	baseURLEnv.Path = path.Join(baseURLEnv.Path, "environments/", o.Env)
+	baseURLEnv.Path = path.Join(baseURLEnv.Path, "v1/o/", o.Org, "environments/", o.Env)
 
 	c := &EdgeClient{client: httpClient, BaseURL: baseURL, BaseURLEnv: baseURLEnv, UserAgent: userAgent}
 	c.Proxies = &ProxiesServiceOp{client: c}
@@ -278,9 +281,8 @@ func (c *EdgeClient) NewRequest(method, urlStr string, body interface{}) (*http.
 	}
 	u := c.BaseURL.ResolveReference(rel)
 
-	entitytype := reflect.TypeOf(&body).Elem()
-
-	if entitytype.String() == "KVMService" {
+	//TODO: find a better way...
+	if !strings.Contains(urlStr, "apis") {
 		u.Path = path.Join(c.BaseURLEnv.Path, rel.Path)
 	} else {
 		u.Path = path.Join(c.BaseURL.Path, rel.Path)
